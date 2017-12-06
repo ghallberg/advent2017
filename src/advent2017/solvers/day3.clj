@@ -1,24 +1,30 @@
 (ns advent2017.solvers.day3
   (:require [clojure.math.numeric-tower :as math]
             [advent2017.utils :as u]))
-(defn log2 [n]
-  (/ (Math/log n) (Math/log 2)))
 
-(def odds  (drop 1 (filter odd? (range))))
-(def evens (drop 1 (filter even? (range))))
-(def two-powers (map (partial math/expt 2) (range)))
+(def odds  (filter odd? (range)))
+(def rotation-ends (map math/expt odds (repeat 2)))
+(def rotation-pairs (map vector (range) rotation-ends))
 
-(defn haystack [num]
-  (if (even? num)
-    (map (partial nth two-powers) evens)
-    (map (partial nth two-powers) odds)))
+(defn rotation-finder [num]
+  (fn [pair] (<= num (last pair))))
 
-(defn search-haystack [[sum num] cur-hay])
+(defn rotation-pair [num]
+  (first (filter (rotation-finder num) rotation-pairs)))
 
-(defn x [num]
-  (filter (partial < num) (haystack num)))
+(defn step-oscilator [period]
+  (let [half-period (math/floor (/ period 2))]
+    (fn [dist] (math/abs (- (mod (+ dist half-period) period) half-period)))))
 
-(defn solve [input])
+(defn solve [num]
+  (let [pair (rotation-pair num)
+        end-steps (* 2 (first pair))
+        rotation-end (last pair)
+        side-length (math/sqrt rotation-end)
+        rotation-steps (- rotation-end num)
+        period (max 1 (- side-length 1))
+        step-diff ((step-oscilator period) rotation-steps)]
+    (- end-steps step-diff)))
 
 (defn parse [input]
   (u/parse-int input))
