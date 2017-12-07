@@ -33,6 +33,7 @@
         step-diff ((step-oscilator period) rotation-steps)]
     (- end-steps step-diff)))
 
+
 (defn puzzle1 [input]
   (solve (parse input)))
 
@@ -95,13 +96,7 @@
 (defn path-walker [cur-point]
   (next-point cur-point))
 
-(def path (iterate path-walker [[0 0] :down]))
-
-(def points [[0 0][0 1][0 2]])
-(def slot-values [[1 2 3 4][5 6 7 8][9 10 11 12]])
-
-(defn get-value [[x y]]
-  ((slot-values x) y))
+(def path (iterate path-walker [0 0]))
 
 (defn neighbours [[x y]]
   (let [x+ (+ x 1)
@@ -117,11 +112,24 @@
      [x- y]
      [x- y-]]))
 
-(defn neighbour-sum [point]
-  (reduce + (map get-value (neighbours point))))
+(defn get-value [values point]
+  (if-let [value (values point)]
+    value
+    0))
 
-(def neighbour-sums (map neighbour-sum points))
+(defn neighbour-sum [values point]
+  (if (= point [0 0])
+    1
+    (reduce + (map (partial get-value values) (neighbours point)))))
+
+(defn x [[values target index] point]
+  (let [point-value (neighbour-sum values point)]
+    (if (> point-value target)
+      (reduced point-value)
+      [(conj values [point point-value]) target (+ 1 index)])))
+
+(defn first-greater [target]
+  (reduce x [{} target 1] path))
 
 (defn puzzle2 [input]
-  (first filter (partial < (parse input)) neighbour-sums))
-
+  (first-greater (parse input)))
