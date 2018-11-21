@@ -6,8 +6,8 @@
   (first (filter (fn [x] (= (:name x) name)) nodes)))
 
 (defn find-root [nodes]
-  (let [children (set (apply concat (map :child-names nodes)))]
-    (first (filter (fn [x] (not (children (:name x)))) nodes))))
+  (let [branches (set (apply concat (map :branch-names nodes)))]
+    (first (filter (fn [x] (not (branches (:name x)))) nodes))))
 
 (defn clean-token [token]
   (s/replace token #"[\(\),]" ""))
@@ -17,15 +17,15 @@
         node {:name (first tokens)
               :weight (u/parse-int (clean-token (second tokens)))}]
     (if (> (count tokens) 2)
-      (assoc node :child-names (set (map clean-token (subvec tokens 3))))
+      (assoc node :branch-names (set (map clean-token (subvec tokens 3))))
       node)))
 
 (defn build-tree [nodes root]
-  (if (:child-names root)
-    (let [children (map (partial node-by-name nodes) (:child-names root))
-          sub-trees (set (map (partial build-tree nodes) children))]
-      (assoc (dissoc root :child-names) :children sub-trees))
-    root))
+  (let [branches (map (partial node-by-name nodes) (:branch-names root))
+        root (dissoc root :branch-names)
+        branches (set (map (partial build-tree nodes) branches))
+        root-tree-weight (apply + (:weight root) (map :tree-weight branches))]
+    (assoc root :branches branches :tree-weight root-tree-weight)))
 
 (defn parse [input]
   (let [lines (s/split-lines input)
@@ -36,27 +36,19 @@
 (defn puzzle1 [input]
   (:name (parse input)))
 
-(defn tree-weight [node]
-  (apply (partial + (:weight node)) (map tree-weight (:children node))))
+(defn find-bad-branch [branches]
+  (let [groups (vals (group-by :tree-weight branches))
+        bad-group (first (filter (fn [x] (= (count x) 1)) groups))]
+    (first bad-group)))
 
-(defn bad-child [children]
-  (let [child1 (first children)
-        child2 (second children)
-        child3 (last children)]
-  (if (= (tree-weight child1) (tree-weight child2))
-    child3
-    (if (= (tree-weight child1) (tree-weight child3))
-      child2
-      child1))))
-
-(defn find-bad-node [tree]
-  (let [children (:children tree)]
-    (println "TREENAME" (:name tree))
-    (println "CHILD" (bad-child children))
-    (if (apply = (map tree-weight children))
-      [(:name tree) (:weight tree)]
-      (recur (bad-child children)))))
+(defn find-bad-node [root]
+  (if (apply = (seq (map :tree-weight (:branches root))))
+    root
+    (recur (find-bad-branch (:branches root)))))
 
 (defn puzzle2 [input]
-  (let [tree (parse input)]
-    (find-bad-node tree)))
+  (let [tree (parse input)
+        bad-node (find-bad-node tree)
+        branch-weights (map :tree-weight (:branches tree))
+        diff (- (apply max branch-weights) (apply min branch-weights))]
+    [(:name bad-node) (- (:weight bad-node) diff)]))

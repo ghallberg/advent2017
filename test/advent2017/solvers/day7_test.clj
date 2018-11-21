@@ -4,21 +4,29 @@
             [advent2017.solvers.day7 :refer :all]))
 
 (def string-nodes ["hej (12)" "blubb (15)" "bla (123) -> hej, blubb"])
-(def child1 {:name "blubb"
-             :weight 15})
-(def child2 {:name "hej"
-             :weight 12})
+
+(def branch1 {:name "blubb"
+             :weight 15
+             :tree-weight 15
+             :branches #{}})
+
+(def branch2 {:name "hej"
+             :weight 12
+             :tree-weight 12
+             :branches #{}})
+
 (def root-node {:name "bla"
                 :weight 123
-                :child-names #{"hej" "blubb"}})
+                :branch-names #{"hej" "blubb"}})
 
-(def parsed-nodes #{child1
-                    child2
+(def parsed-nodes #{branch1
+                    branch2
                     root-node})
 
 (def tree {:name "bla"
            :weight 123
-           :children #{child1 child2}})
+           :tree-weight 150
+           :branches #{branch1 branch2}})
 
 (def test-input "pbga (66)
 xhth (57)
@@ -53,11 +61,6 @@ cntj (57)")
 (deftest puzzle1-test
   (testing "stuff"
     (is (= (puzzle1 test-input) "tknk"))))
-
-(deftest weight-test
-  (testing "finds correct weight"
-    (is (= (tree-weight tree) 150))
-    (is (= (tree-weight test-tree) (+ 243 243 251 41)))))
 
 (deftest puzzle2-test
   (testing "stuff"
